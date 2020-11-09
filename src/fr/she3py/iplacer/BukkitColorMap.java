@@ -1,5 +1,6 @@
 package fr.she3py.iplacer;
 
+import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -214,13 +215,13 @@ public class BukkitColorMap extends ColorMap<Material> {
 			case "minecraft:block/orientable":
 			case "minecraft:block/orientable_with_bottom":
 			case "minecraft:block/block":
+				if(key.toString().equals("minecraft:dried_kelp_block"))
+					return textures.get("up").getAsString(); // custom model
+				
 				return textures.get("top").getAsString();
 				
 			case "minecraft:block/cube":
 			case "minecraft:block/cube_directional":
-				if(key.toString().equals("minecraft:dried_kelp_block"))
-					return textures.get("up").getAsString(); // custom model
-				
 				return textures.get("up").getAsString();
 				
 			case "minecraft:block/template_single_face":
@@ -254,7 +255,7 @@ public class BukkitColorMap extends ColorMap<Material> {
 		
 		ZipFile zipFile = new ZipFile(new File(ImagePlacer.plugin.getDataFolder(), "1.16.3.zip"));
 		
-		BufferedImage out = new BufferedImage(width * 16, height * 16, BufferedImage.TYPE_INT_RGB);
+		BufferedImage out = new BufferedImage(width * 16, height * 16, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2d = out.createGraphics();
 		
 		Map<Material, Image> cache = new HashMap<>(255);
@@ -262,6 +263,11 @@ public class BukkitColorMap extends ColorMap<Material> {
 		for(int x = 0; x < width; ++x) {
 			for(int y = 0; y < height; ++y) {
 				int rgb = in.getRGB(x, y);
+				int alpha = (rgb >> 24) & 0xFF;
+				
+				if(alpha <= 64)
+					continue;
+				
 				Material material = findNearestTexture(rgb);
 				
 				Image tex = cache.computeIfAbsent(material, materialIn -> {
@@ -273,6 +279,7 @@ public class BukkitColorMap extends ColorMap<Material> {
 					}
 				});
 				
+				g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha / 255f));
 				g2d.drawImage(tex, x * 16, y * 16, null);
 			}
 		}
