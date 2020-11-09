@@ -34,6 +34,7 @@ import net.minecraft.server.v1_16_R2.VoxelShapes;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -246,7 +247,28 @@ public class BukkitColorMap extends ColorMap<Material> {
 		BufferedImage texture = ImageIO.read(zipFile.getInputStream(blockTexture));
 		Arguments.requireNonNull("texture", texture);
 		
+		JsonObject meta = readTextureMeta(zipFile, namespace, texturePath);
+		if(meta != null) {
+			Arguments.requireEqual("size", meta.size(), 1);
+			Arguments.requireNonNull("animation", meta.get("animation"));
+			
+			int width = texture.getWidth();
+			int height = texture.getHeight();
+			Arguments.require(width <= height, UnsupportedOperationException::new, "landscape orientation");
+			
+			return texture.getSubimage(0, 0, width, width);
+		}
+		
 		return texture;
+	}
+	
+	@Nullable
+	private static JsonObject readTextureMeta(ZipFile zipFile, String namespace, String texturePath) throws IOException {
+		ZipEntry meta = zipFile.getEntry("assets/" + namespace + "/textures/" + texturePath + ".png.mcmeta");
+		if(meta == null)
+			return null;
+		
+		return new JsonParser().parse(new InputStreamReader(zipFile.getInputStream(meta))).getAsJsonObject();
 	}
 	
 	public BufferedImage mapImage(BufferedImage in) throws IOException {
