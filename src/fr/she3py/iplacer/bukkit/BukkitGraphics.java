@@ -7,7 +7,9 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,10 +42,15 @@ import fr.she3py.iplacer.util.Arguments;
 import fr.she3py.iplacer.util.Color3i;
 
 public class BukkitGraphics {
-	private final List<BukkitGraphic> graphics;
+	private static final Map<File, BukkitGraphics> GRAPHICS_MAP = new HashMap<>();
+	private final Map<BukkitGraphic, BufferedImage> graphics;
+	private final BukkitConstructionCaches constructionCaches;
 	
-	private BukkitGraphics(int initialCapacity) {
-		this.graphics = new ArrayList<>(initialCapacity);
+	private BukkitGraphics(File rsc, int initialCapacity) {
+		this.graphics = new HashMap<>(initialCapacity);
+		this.constructionCaches = new BukkitConstructionCaches(initialCapacity);
+		
+		GRAPHICS_MAP.put(rsc, this);
 	}
 	
 	public static BukkitGraphics createFrom(File rsc) throws IOException {
@@ -51,7 +58,7 @@ public class BukkitGraphics {
 		List<Material> materials = findMaterials().collect(Collectors.toList());
 		
 		ImagePlacer.logger.info("Found " + materials.size() + " materials");
-		BukkitGraphics graphics = new BukkitGraphics(materials.size());
+		BukkitGraphics graphics = new BukkitGraphics(rsc, materials.size());
 		
 		ImagePlacer.logger.info("Creating graphics for Bukkit");
 		ZipFile zipFile = new ZipFile(rsc);
@@ -68,6 +75,7 @@ public class BukkitGraphics {
 		}
 		
 		zipFile.close();
+		graphics.constructionCaches.clear();
 		
 		ImagePlacer.logger.info("Generation complete - " + graphics.size() + " of " + materials.size() + " blocks mapped");
 		return graphics;
@@ -77,18 +85,26 @@ public class BukkitGraphics {
 		return createFrom(new File(ImagePlacer.plugin.getDataFolder(), file));
 	}
 	
-	private BukkitGraphic createGraphicFor(Material material, ZipFile zipFile) throws IOException {
-		BukkitGraphic graphic = new BukkitGraphic(material, Color3i.getAverageColor(findMaterialTexture(material, zipFile)));
-		this.graphics.add(graphic);
+	public static BukkitGraphics findFrom(File rsc) throws IOException {
+		if(GRAPHICS_MAP.containsKey(rsc))
+			return GRAPHICS_MAP.get(rsc);
 		
+		return createFrom(rsc);
+	}
+	
+	private BukkitGraphic createGraphicFor(Material material, ZipFile zipFile) throws IOException {
+		BufferedImage texture = findMaterialTexture(material, zipFile, constructionCaches);
+		BukkitGraphic graphic = new BukkitGraphic(material, Color3i.getAverageColor(texture));
+		
+		this.graphics.put(graphic, texture);
 		return graphic;
 	}
 	
-	static BufferedImage findMaterialTexture(Material block, ZipFile zipFile) throws IOException {
-		NamespacedKey key = block.getKey();
+	private static BufferedImage findMaterialTexture(Material material, ZipFile zipFile, BukkitConstructionCaches caches) throws IOException {
+		NamespacedKey key = material.getKey();
 		
-		JsonObject model = parseBlockModel(key, zipFile);
-		String texturePath = findTexturePath(model, key);
+		JsonObject model = parseBlockModel(key, zipFile, caches);
+		String texturePath = findTexturePath(key, model, caches);
 		
 		String namespace;
 		if(texturePath.contains(":")) {
@@ -99,69 +115,102 @@ public class BukkitGraphics {
 			namespace = key.getNamespace();
 		}
 		
-		return readTexture(zipFile, namespace, texturePath);
+		return readTexture(zipFile, namespace, texturePath, caches);
 	}
 	
-	private static JsonObject parseBlockModel(NamespacedKey key, ZipFile zipFile) throws IOException {
+	public static BufferedImage findMaterialTexture(Material material, File file, ZipFile zipFile) throws IOException {
+		BukkitGraphics graphics = findFrom(file);
+		
+		return graphics.findMaterialTexture(graphics.findGraphic(material, zipFile));
+	}
+	
+	public BukkitGraphic findGraphic(Material material, ZipFile zipFile) throws IOException {
+		for(BukkitGraphic graphic : graphics.keySet())
+			if(graphic.getMaterial() == material)
+				return graphic;
+		
+		return createGraphicFor(material, zipFile);
+	}
+	
+	public BufferedImage findMaterialTexture(BukkitGraphic graphic) {
+		BufferedImage texture = this.graphics.get(graphic);
+		Arguments.requireNonNull("texture", texture);
+		
+		return texture;
+	}
+	
+	private static JsonObject parseBlockModel(NamespacedKey key, ZipFile zipFile, BukkitConstructionCaches caches) throws IOException {
+		if(caches.blockModels.containsKey(key))
+			return caches.blockModels.get(key);
+		
 		ZipEntry blockModel = zipFile.getEntry("assets/" + key.getNamespace() + "/models/block/" + key.getKey() + ".json");
 		Arguments.require(blockModel != null, UnsupportedOperationException::new, "Model not found");
 		
-		return new JsonParser().parse(new InputStreamReader(zipFile.getInputStream(blockModel))).getAsJsonObject();
+		JsonObject result = new JsonParser().parse(new InputStreamReader(zipFile.getInputStream(blockModel))).getAsJsonObject();
+		caches.blockModels.put(key, result);
+		
+		return result;
 	}
 	
 	@NotNull
-	private static String findTexturePath(JsonObject model, NamespacedKey key) {
-		String parent = model.get("parent").getAsString();
-		if(!parent.contains(":"))
-			parent = key.getNamespace() + ":" + parent;
-		
-		JsonObject textures = model.get("textures").getAsJsonObject();
-		
-		switch(parent) {
-			case "minecraft:block/cube_all":
-			case "minecraft:block/leaves":
-				return textures.get("all").getAsString();
+	private static String findTexturePath(NamespacedKey key, JsonObject model, BukkitConstructionCaches caches) {
+		return caches.texturePaths.computeIfAbsent(key, keyIn -> {
+			String parent = model.get("parent").getAsString();
+			if(!parent.contains(":"))
+				parent = keyIn.getNamespace() + ":" + parent;
 			
-			case "minecraft:block/cube_column":
-				return textures.get("end").getAsString();
+			JsonObject textures = model.get("textures").getAsJsonObject();
 			
-			case "minecraft:block/cube_top":
-			case "minecraft:block/cube_bottom_top":
-			case "minecraft:block/orientable":
-			case "minecraft:block/orientable_with_bottom":
-			case "minecraft:block/block":
-				if(key.toString().equals("minecraft:dried_kelp_block"))
-					return textures.get("up").getAsString(); // custom model
+			switch(parent) {
+				case "minecraft:block/cube_all":
+				case "minecraft:block/leaves":
+					return textures.get("all").getAsString();
 				
-				return textures.get("top").getAsString();
-			
-			case "minecraft:block/cube":
-			case "minecraft:block/cube_directional":
-				return textures.get("up").getAsString();
-			
-			case "minecraft:block/template_single_face":
-				return textures.get("texture").getAsString();
-			
-			case "minecraft:block/template_command_block":
-				return textures.get("side").getAsString();
-			
-			case "minecraft:block/template_glazed_terracotta":
-				return textures.get("pattern").getAsString();
-			
-			default:
-				Arguments.fail(UnsupportedOperationException::new, parent);
-				return null;
-		}
+				case "minecraft:block/cube_column":
+					return textures.get("end").getAsString();
+				
+				case "minecraft:block/cube_top":
+				case "minecraft:block/cube_bottom_top":
+				case "minecraft:block/orientable":
+				case "minecraft:block/orientable_with_bottom":
+				case "minecraft:block/block":
+					if(keyIn.toString().equals("minecraft:dried_kelp_block"))
+						return textures.get("up").getAsString(); // custom model
+					
+					return textures.get("top").getAsString();
+				
+				case "minecraft:block/cube":
+				case "minecraft:block/cube_directional":
+					return textures.get("up").getAsString();
+				
+				case "minecraft:block/template_single_face":
+					return textures.get("texture").getAsString();
+				
+				case "minecraft:block/template_command_block":
+					return textures.get("side").getAsString();
+				
+				case "minecraft:block/template_glazed_terracotta":
+					return textures.get("pattern").getAsString();
+				
+				default:
+					Arguments.fail(UnsupportedOperationException::new, parent);
+					return null;
+			}
+		});
 	}
 	
-	private static BufferedImage readTexture(ZipFile zipFile, String namespace, String texturePath) throws IOException {
+	private static BufferedImage readTexture(ZipFile zipFile, String namespace, String texturePath, BukkitConstructionCaches caches) throws IOException {
+		final String cacheKey = namespace + texturePath;
+		if(caches.textures.containsKey(cacheKey))
+			return caches.textures.get(cacheKey);
+		
 		ZipEntry blockTexture = zipFile.getEntry("assets/" + namespace + "/textures/" + texturePath + ".png");
 		Arguments.require(blockTexture != null, "Texture not found: " + namespace + ":" + texturePath);
 		
 		BufferedImage texture = ImageIO.read(zipFile.getInputStream(blockTexture));
 		Arguments.requireNonNull("texture", texture);
 		
-		JsonObject meta = readTextureMeta(zipFile, namespace, texturePath);
+		JsonObject meta = readTextureMeta(zipFile, namespace, texturePath, caches);
 		if(meta != null) {
 			Arguments.requireEqual("size", meta.size(), 1);
 			Arguments.requireNonNull("animation", meta.get("animation"));
@@ -173,20 +222,28 @@ public class BukkitGraphics {
 			return texture.getSubimage(0, 0, width, width);
 		}
 		
+		caches.textures.put(cacheKey, texture);
 		return texture;
 	}
 	
 	@Nullable
-	private static JsonObject readTextureMeta(ZipFile zipFile, String namespace, String texturePath) throws IOException {
+	private static JsonObject readTextureMeta(ZipFile zipFile, String namespace, String texturePath, BukkitConstructionCaches caches) throws IOException {
+		final String cacheKey = namespace + texturePath;
+		if(caches.textureMetas.containsKey(cacheKey))
+			return caches.textureMetas.get(cacheKey);
+		
 		ZipEntry meta = zipFile.getEntry("assets/" + namespace + "/textures/" + texturePath + ".png.mcmeta");
 		if(meta == null)
 			return null;
 		
-		return new JsonParser().parse(new InputStreamReader(zipFile.getInputStream(meta))).getAsJsonObject();
+		JsonObject result = new JsonParser().parse(new InputStreamReader(zipFile.getInputStream(meta))).getAsJsonObject();
+		caches.textureMetas.put(cacheKey, result);
+		
+		return result;
 	}
 	
 	public BukkitColorMap makeColorMap() {
-		return new BukkitColorMap(graphics);
+		return new BukkitColorMap(new ArrayList<>(graphics.keySet()));
 	}
 	
 	public boolean isEmpty() {
