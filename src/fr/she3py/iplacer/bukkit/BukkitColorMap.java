@@ -6,11 +6,9 @@ import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipFile;
 
 import javax.imageio.ImageIO;
 
@@ -25,12 +23,9 @@ public class BukkitColorMap extends ColorMap<BukkitGraphic> {
 		super(graphics);
 	}
 	
-	public BufferedImage mapImage(BufferedImage in) throws IOException {
+	public BufferedImage mapImage(BufferedImage in) {
 		int width = in.getWidth();
 		int height = in.getHeight();
-		
-		File file = new File(ImagePlacer.plugin.getDataFolder(), "1.16.3.zip");
-		ZipFile zipFile = new ZipFile(file);
 		
 		BufferedImage out = new BufferedImage(width * 16, height * 16, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2d = out.createGraphics();
@@ -46,15 +41,7 @@ public class BukkitColorMap extends ColorMap<BukkitGraphic> {
 					continue;
 				
 				BukkitGraphic graphic = findNearestGraphic(rgb);
-				
-				Image tex = cache.computeIfAbsent(graphic.getMaterial(), materialIn -> {
-					try {
-						return BukkitGraphics.findMaterialTexture(materialIn, file, zipFile).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
-					}
-					catch(IOException e) {
-						throw new UncheckedIOException(e);
-					}
-				});
+				Image tex = cache.computeIfAbsent(graphic.material, materialIn -> graphic.texture.getScaledInstance(16, 16, Image.SCALE_SMOOTH));
 				
 				g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha / 255f));
 				g2d.drawImage(tex, x * 16, y * 16, null);

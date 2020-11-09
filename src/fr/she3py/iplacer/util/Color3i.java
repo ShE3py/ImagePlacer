@@ -105,4 +105,9 @@ public class Color3i {
 	public int toRGB() {
 		return (r << 16) | (g << 8) | b;
 	}
+	
+	@Override
+	public String toString() {
+		return "Color3i[" + "r=" + r + ", g=" + g + ", b=" + b + ']';
+	}
 }
