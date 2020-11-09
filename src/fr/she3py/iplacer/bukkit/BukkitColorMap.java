@@ -29,7 +29,8 @@ public class BukkitColorMap extends ColorMap<BukkitGraphic> {
 		int width = in.getWidth();
 		int height = in.getHeight();
 		
-		ZipFile zipFile = new ZipFile(new File(ImagePlacer.plugin.getDataFolder(), "1.16.3.zip"));
+		File file = new File(ImagePlacer.plugin.getDataFolder(), "1.16.3.zip");
+		ZipFile zipFile = new ZipFile(file);
 		
 		BufferedImage out = new BufferedImage(width * 16, height * 16, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2d = out.createGraphics();
@@ -48,7 +49,7 @@ public class BukkitColorMap extends ColorMap<BukkitGraphic> {
 				
 				Image tex = cache.computeIfAbsent(graphic.getMaterial(), materialIn -> {
 					try {
-						return BukkitGraphics.findMaterialTexture(materialIn, zipFile).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+						return BukkitGraphics.findMaterialTexture(materialIn, file, zipFile).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
 					}
 					catch(IOException e) {
 						throw new UncheckedIOException(e);
