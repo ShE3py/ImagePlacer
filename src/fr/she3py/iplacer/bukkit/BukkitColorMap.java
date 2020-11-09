@@ -1,18 +1,11 @@
 package fr.she3py.iplacer.bukkit;
 
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.imageio.ImageIO;
-
-import org.bukkit.Material;
 
 import fr.she3py.iplacer.ColorMap;
 import fr.she3py.iplacer.ImagePlacer;
@@ -23,42 +16,21 @@ public class BukkitColorMap extends ColorMap<BukkitGraphic> {
 		super(graphics);
 	}
 	
-	public BufferedImage mapImage(BufferedImage in) {
-		int width = in.getWidth();
-		int height = in.getHeight();
+	@Override
+	public BukkitImage map(BufferedImage src) {
+		BukkitImage dest = new BukkitImage(src.getWidth(), src.getHeight());
+		map(src, dest);
 		
-		BufferedImage out = new BufferedImage(width * 16, height * 16, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g2d = out.createGraphics();
-		
-		Map<Material, Image> cache = new HashMap<>(255);
-		
-		for(int x = 0; x < width; ++x) {
-			for(int y = 0; y < height; ++y) {
-				int rgb = in.getRGB(x, y);
-				int alpha = (rgb >> 24) & 0xFF;
-				
-				if(alpha <= 64)
-					continue;
-				
-				BukkitGraphic graphic = findNearestGraphic(rgb);
-				Image tex = cache.computeIfAbsent(graphic.material, materialIn -> graphic.texture.getScaledInstance(16, 16, Image.SCALE_SMOOTH));
-				
-				g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha / 255f));
-				g2d.drawImage(tex, x * 16, y * 16, null);
-			}
-		}
-		
-		g2d.dispose();
-		return out;
+		return dest;
 	}
 	
-	public void mapImage(File in, File out) throws IOException {
-		BufferedImage imageIn = ImageIO.read(in);
+	public void mapImage(File fileIn, File fileOut) throws IOException {
+		BufferedImage imageIn = ImageIO.read(fileIn);
 		Arguments.requireNonNull("imageIn", imageIn);
 		
-		BufferedImage imageOut = mapImage(imageIn);
+		BufferedImage imageOut = map(imageIn).toTiledImage();
 		
-		boolean ret = ImageIO.write(imageOut, "png", out);
+		boolean ret = ImageIO.write(imageOut, "png", fileOut);
 		Arguments.require(ret, "No appropriate writer was found");
 	}
 	
