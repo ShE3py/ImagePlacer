@@ -7,9 +7,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,18 +37,14 @@ import com.google.gson.JsonParser;
 
 import fr.she3py.iplacer.ImagePlacer;
 import fr.she3py.iplacer.util.Arguments;
-import fr.she3py.iplacer.util.Color3i;
 
 public class BukkitGraphics {
-	private static final Map<File, BukkitGraphics> GRAPHICS_MAP = new HashMap<>();
-	private final Map<BukkitGraphic, BufferedImage> graphics;
+	private final List<BukkitGraphic> graphics;
 	private final BukkitConstructionCaches constructionCaches;
 	
-	private BukkitGraphics(File rsc, int initialCapacity) {
-		this.graphics = new HashMap<>(initialCapacity);
+	private BukkitGraphics(int initialCapacity) {
+		this.graphics = new ArrayList<>(initialCapacity);
 		this.constructionCaches = new BukkitConstructionCaches(initialCapacity);
-		
-		GRAPHICS_MAP.put(rsc, this);
 	}
 	
 	public static BukkitGraphics createFrom(File rsc) throws IOException {
@@ -58,7 +52,7 @@ public class BukkitGraphics {
 		List<Material> materials = findMaterials().collect(Collectors.toList());
 		
 		ImagePlacer.logger.info("Found " + materials.size() + " materials");
-		BukkitGraphics graphics = new BukkitGraphics(rsc, materials.size());
+		BukkitGraphics graphics = new BukkitGraphics(materials.size());
 		
 		ImagePlacer.logger.info("Creating graphics for Bukkit");
 		ZipFile zipFile = new ZipFile(rsc);
@@ -85,18 +79,10 @@ public class BukkitGraphics {
 		return createFrom(new File(ImagePlacer.plugin.getDataFolder(), file));
 	}
 	
-	public static BukkitGraphics findFrom(File rsc) throws IOException {
-		if(GRAPHICS_MAP.containsKey(rsc))
-			return GRAPHICS_MAP.get(rsc);
-		
-		return createFrom(rsc);
-	}
-	
 	private BukkitGraphic createGraphicFor(Material material, ZipFile zipFile) throws IOException {
-		BufferedImage texture = findMaterialTexture(material, zipFile, constructionCaches);
-		BukkitGraphic graphic = new BukkitGraphic(material, Color3i.getAverageColor(texture));
+		BukkitGraphic graphic = new BukkitGraphic(material, findMaterialTexture(material, zipFile, constructionCaches));
 		
-		this.graphics.put(graphic, texture);
+		this.graphics.add(graphic);
 		return graphic;
 	}
 	
@@ -116,27 +102,6 @@ public class BukkitGraphics {
 		}
 		
 		return readTexture(zipFile, namespace, texturePath, caches);
-	}
-	
-	public static BufferedImage findMaterialTexture(Material material, File file, ZipFile zipFile) throws IOException {
-		BukkitGraphics graphics = findFrom(file);
-		
-		return graphics.findMaterialTexture(graphics.findGraphic(material, zipFile));
-	}
-	
-	public BukkitGraphic findGraphic(Material material, ZipFile zipFile) throws IOException {
-		for(BukkitGraphic graphic : graphics.keySet())
-			if(graphic.getMaterial() == material)
-				return graphic;
-		
-		return createGraphicFor(material, zipFile);
-	}
-	
-	public BufferedImage findMaterialTexture(BukkitGraphic graphic) {
-		BufferedImage texture = this.graphics.get(graphic);
-		Arguments.requireNonNull("texture", texture);
-		
-		return texture;
 	}
 	
 	private static JsonObject parseBlockModel(NamespacedKey key, ZipFile zipFile, BukkitConstructionCaches caches) throws IOException {
@@ -243,7 +208,7 @@ public class BukkitGraphics {
 	}
 	
 	public BukkitColorMap makeColorMap() {
-		return new BukkitColorMap(new ArrayList<>(graphics.keySet()));
+		return new BukkitColorMap(graphics);
 	}
 	
 	public boolean isEmpty() {
