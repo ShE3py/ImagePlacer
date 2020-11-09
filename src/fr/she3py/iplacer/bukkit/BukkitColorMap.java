@@ -1,4 +1,4 @@
-package fr.she3py.iplacer;
+package fr.she3py.iplacer.bukkit;
 
 import java.awt.AlphaComposite;
 import java.awt.Graphics2D;
@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -39,11 +40,14 @@ import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import fr.she3py.iplacer.ColorMap;
+import fr.she3py.iplacer.ImagePlacer;
 import fr.she3py.iplacer.util.Arguments;
+import fr.she3py.iplacer.util.Color3i;
 
-public class BukkitColorMap extends ColorMap<Material> {
-	private BukkitColorMap(Map<Material, Integer> data) {
-		super(data);
+public class BukkitColorMap extends ColorMap<BukkitGraphic> {
+	private BukkitColorMap(List<BukkitGraphic> graphics) {
+		super(graphics);
 	}
 	
 	public static BukkitColorMap buildFrom(File rsc) throws IOException {
@@ -114,7 +118,7 @@ public class BukkitColorMap extends ColorMap<Material> {
 		});
 		
 		ImagePlacer.logger.info("Found " + blocks.size() + " blocks");
-		Map<Material, Integer> data = new HashMap<>(blocks.size());
+		List<BukkitGraphic> graphics = new ArrayList<>(blocks.size());
 		
 		ImagePlacer.logger.info("Generating colormap from: " + rsc.getAbsolutePath());
 		ZipFile zipFile = new ZipFile(rsc);
@@ -129,13 +133,13 @@ public class BukkitColorMap extends ColorMap<Material> {
 				
 				continue;
 			}
-			data.put(block, color);
+			graphics.add(new BukkitGraphic(block, Color3i.from(color)));
 			
 			ImagePlacer.logger.info(block.getKey() + " -> (" + ((color >> 16) & 0xFF) + ", " + ((color >> 8) & 0xFF) + ", " + (color & 0xFF) + ")");
 		}
 		
-		ImagePlacer.logger.info("Generation complete - " + data.size() + " of " + blocks.size() + " blocks mapped");
-		return new BukkitColorMap(data);
+		ImagePlacer.logger.info("Generation complete - " + graphics.size() + " of " + blocks.size() + " blocks mapped");
+		return new BukkitColorMap(graphics);
 	}
 	
 	public static BukkitColorMap build() throws IOException {
@@ -290,9 +294,9 @@ public class BukkitColorMap extends ColorMap<Material> {
 				if(alpha <= 64)
 					continue;
 				
-				Material material = findNearestTexture(rgb);
+				BukkitGraphic graphic = findNearestGraphic(rgb);
 				
-				Image tex = cache.computeIfAbsent(material, materialIn -> {
+				Image tex = cache.computeIfAbsent(graphic.getMaterial(), materialIn -> {
 					try {
 						return findMaterialTexture(materialIn, zipFile).getScaledInstance(16, 16, Image.SCALE_SMOOTH);
 					}
