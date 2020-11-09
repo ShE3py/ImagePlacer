@@ -1,0 +1,7 @@
+name: ImagePlacer
+version: 1.0.0
+author: ShE3py
+
+main: fr.she3py.iplacer.ImagePlacer
+prefix: "ImagePlacer"
+api-version: "1.16"
