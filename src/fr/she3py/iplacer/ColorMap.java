@@ -31,7 +31,7 @@ public class ColorMap<T> {
 		return Math.sqrt(getColorDistanceSq(r1, g1, b1, r2, g2, b2));
 	}
 	
-	public T getNearestTexture(int r, int g, int b) {
+	public T findNearestTexture(int r, int g, int b) {
 		Arguments.require(r >= 0 && r <= 255, "Red component out of range: " + r);
 		Arguments.require(g >= 0 && g <= 255, "Green component out of range: " + g);
 		Arguments.require(b >= 0 && b <= 255, "Blue component out of range: " + b);
@@ -52,8 +52,8 @@ public class ColorMap<T> {
 		return nearest;
 	}
 	
-	public T getNearestTexture(int rgb) {
-		return getNearestTexture((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+	public T findNearestTexture(int rgb) {
+		return findNearestTexture((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
 	}
 	
 	@UnmodifiableView
