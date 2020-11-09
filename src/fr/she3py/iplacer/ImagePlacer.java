@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import fr.she3py.iplacer.bukkit.BukkitColorMap;
+import fr.she3py.iplacer.bukkit.BukkitGraphics;
 
 public class ImagePlacer extends JavaPlugin {
 	public static ImagePlacer plugin;
@@ -20,7 +21,7 @@ public class ImagePlacer extends JavaPlugin {
 		
 		Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
 			try {
-				BukkitColorMap colorMap = BukkitColorMap.build();
+				BukkitColorMap colorMap = BukkitGraphics.createFrom("1.16.3.zip").makeColorMap();
 				colorMap.mapImage("in.png", "out.png");
 				
 				logger.info(colorMap.getGraphics().toString());

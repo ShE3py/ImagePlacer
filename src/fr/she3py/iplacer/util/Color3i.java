@@ -1,5 +1,7 @@
 package fr.she3py.iplacer.util;
 
+import java.awt.image.BufferedImage;
+
 public class Color3i {
 	public int r;
 	public int g;
@@ -23,7 +25,7 @@ public class Color3i {
 		return new Color3i(rgb);
 	}
 	
-	public static double weightedDistanceToSq(int r1, int g1, int b1, int r2, int g2, int b2) {
+	public static double getWeightedDistanceSq(int r1, int g1, int b1, int r2, int g2, int b2) {
 		int deltaR = r2 - r1;
 		int deltaG = g2 - g1;
 		int deltaB = b2 - b1;
@@ -36,20 +38,48 @@ public class Color3i {
 		return (rWeight * deltaR * deltaR) + (gWeight * deltaG * deltaG) + (bWeight * deltaB * deltaB);
 	}
 	
-	public static double weightedDistanceToSq(Color3i from, Color3i to) {
-		return weightedDistanceToSq(from.r, from.g, from.b, to.r, to.g, to.b);
+	public static Color3i getAverageColor(BufferedImage image) {
+		Arguments.requireNonNull("image", image);
+		
+		long rSum = 0;
+		long gSum = 0;
+		long bSum = 0;
+		
+		int width = image.getWidth();
+		int height = image.getHeight();
+		
+		for(int x = 0; x < width; ++x) {
+			for(int y = 0; y < height; ++y) {
+				int rgb = image.getRGB(x, y);
+				
+				rSum += (rgb >> 16) & 0xFF;
+				gSum += (rgb >> 8) & 0xFF;
+				bSum += rgb & 0xFF;
+			}
+		}
+		
+		long size = width * height;
+		int rAvg = (int) (rSum / size);
+		int gAvg = (int) (gSum / size);
+		int bAvg = (int) (bSum / size);
+		
+		return new Color3i(rAvg, gAvg, bAvg);
 	}
 	
-	public static double weightedDistanceTo(int r1, int g1, int b1, int r2, int g2, int b2) {
-		return Math.sqrt(weightedDistanceToSq(r1, g1, b1, r2, g2, b2));
+	public static double getWeightedDistanceSq(Color3i from, Color3i to) {
+		return getWeightedDistanceSq(from.r, from.g, from.b, to.r, to.g, to.b);
 	}
 	
-	public static double weightedDistanceTo(Color3i from, Color3i to) {
-		return Math.sqrt(weightedDistanceToSq(from, to));
+	public static double getWeightedDistance(int r1, int g1, int b1, int r2, int g2, int b2) {
+		return Math.sqrt(getWeightedDistanceSq(r1, g1, b1, r2, g2, b2));
+	}
+	
+	public static double getWeightedDistance(Color3i from, Color3i to) {
+		return Math.sqrt(getWeightedDistanceSq(from, to));
 	}
 	
 	public double weightedDistanceToSq(Color3i to) {
-		return weightedDistanceToSq(this, to);
+		return getWeightedDistanceSq(this, to);
 	}
 	
 	public double weightedDistanceToSq(int r, int g, int b) {
@@ -61,7 +91,7 @@ public class Color3i {
 	}
 	
 	public double weightedDistanceTo(Color3i to) {
-		return weightedDistanceTo(this, to);
+		return getWeightedDistance(this, to);
 	}
 	
 	public double weightedDistanceTo(int r, int g, int b) {
