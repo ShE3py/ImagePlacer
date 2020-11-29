@@ -25,17 +25,12 @@ public class Color3i {
 		return new Color3i(rgb);
 	}
 	
-	public static double getWeightedDistanceSq(int r1, int g1, int b1, int r2, int g2, int b2) {
+	public static double getDistanceSq(int r1, int g1, int b1, int r2, int g2, int b2) {
 		int deltaR = r2 - r1;
 		int deltaG = g2 - g1;
 		int deltaB = b2 - b1;
 		
-		double redmean = (r1 + r2) / 2d;
-		double rWeight = 2 + redmean / 256;
-		double gWeight = 4d;
-		double bWeight = 2 + (255 - redmean) / 256;
-		
-		return (rWeight * deltaR * deltaR) + (gWeight * deltaG * deltaG) + (bWeight * deltaB * deltaB);
+		return (deltaR * deltaR) + (deltaG * deltaG) + (deltaB * deltaB);
 	}
 	
 	public static Color3i getAverageColor(BufferedImage image) {
@@ -66,40 +61,40 @@ public class Color3i {
 		return new Color3i(rAvg, gAvg, bAvg);
 	}
 	
-	public static double getWeightedDistanceSq(Color3i from, Color3i to) {
-		return getWeightedDistanceSq(from.r, from.g, from.b, to.r, to.g, to.b);
+	public static double getDistanceSq(Color3i from, Color3i to) {
+		return getDistanceSq(from.r, from.g, from.b, to.r, to.g, to.b);
 	}
 	
-	public static double getWeightedDistance(int r1, int g1, int b1, int r2, int g2, int b2) {
-		return Math.sqrt(getWeightedDistanceSq(r1, g1, b1, r2, g2, b2));
+	public static double getDistance(int r1, int g1, int b1, int r2, int g2, int b2) {
+		return Math.sqrt(getDistanceSq(r1, g1, b1, r2, g2, b2));
 	}
 	
-	public static double getWeightedDistance(Color3i from, Color3i to) {
-		return Math.sqrt(getWeightedDistanceSq(from, to));
+	public static double getDistance(Color3i from, Color3i to) {
+		return Math.sqrt(getDistanceSq(from, to));
 	}
 	
-	public double weightedDistanceToSq(Color3i to) {
-		return getWeightedDistanceSq(this, to);
+	public double distanceToSq(Color3i to) {
+		return getDistanceSq(this, to);
 	}
 	
-	public double weightedDistanceToSq(int r, int g, int b) {
-		return weightedDistanceToSq(new Color3i(r, g, b));
+	public double distanceToSq(int r, int g, int b) {
+		return distanceToSq(new Color3i(r, g, b));
 	}
 	
-	public double weightedDistanceToSq(int rgb) {
-		return weightedDistanceToSq(new Color3i(rgb));
+	public double distanceToSq(int rgb) {
+		return distanceToSq(new Color3i(rgb));
 	}
 	
-	public double weightedDistanceTo(Color3i to) {
-		return getWeightedDistance(this, to);
+	public double distanceTo(Color3i to) {
+		return getDistance(this, to);
 	}
 	
-	public double weightedDistanceTo(int r, int g, int b) {
-		return weightedDistanceTo(new Color3i(r, g, b));
+	public double distanceTo(int r, int g, int b) {
+		return distanceTo(new Color3i(r, g, b));
 	}
 	
-	public double weightedDistanceTo(int rgb) {
-		return weightedDistanceTo(new Color3i(rgb));
+	public double distanceTo(int rgb) {
+		return distanceTo(new Color3i(rgb));
 	}
 	
 	public int toRGB() {

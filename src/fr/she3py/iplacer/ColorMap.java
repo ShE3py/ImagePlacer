@@ -21,7 +21,7 @@ public abstract class ColorMap<G extends IGraphic> {
 		double currentDistance = Double.MAX_VALUE;
 		
 		for(G graphic : graphics) {
-			double distance = color.weightedDistanceToSq(graphic.getAverageColor());
+			double distance = color.distanceTo(graphic.getAverageColor());
 			
 			if(distance < currentDistance) {
 				nearest = graphic;
