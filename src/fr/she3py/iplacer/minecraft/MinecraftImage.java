@@ -1,4 +1,4 @@
-package fr.she3py.iplacer.minecraft.bukkit;
+package fr.she3py.iplacer.minecraft;
 
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -6,32 +6,32 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bukkit.Material;
-
 import fr.she3py.iplacer.GraphicImage;
+import fr.she3py.iplacer.minecraft.MinecraftGraphic;
+import fr.she3py.iplacer.util.GraphicIdentifier;
 
-public class BukkitImage extends GraphicImage<BukkitGraphic> {
-	public BukkitImage(int width, int height, BukkitGraphic[] data) {
+public class MinecraftImage extends GraphicImage<MinecraftGraphic> {
+	public MinecraftImage(int width, int height, MinecraftGraphic[] data) {
 		super(width, height, data);
 	}
 	
-	public BukkitImage(int width, int height) {
-		super(width, height, new BukkitGraphic[width * height]);
+	public MinecraftImage(int width, int height) {
+		super(width, height, new MinecraftGraphic[width * height]);
 	}
 	
 	public BufferedImage toTiledImage() {
 		BufferedImage out = new BufferedImage(width * 16, height * 16, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2d = out.createGraphics();
 		
-		Map<Material, Image> cache = new HashMap<>(255);
+		Map<GraphicIdentifier, Image> cache = new HashMap<>(255);
 		
 		for(int x = 0; x < width; ++x) {
 			for(int y = 0; y < height; ++y) {
-				BukkitGraphic graphic = get(x, y);
+				MinecraftGraphic graphic = get(x, y);
 				if(graphic == null)
 					continue;
 				
-				Image tex = cache.computeIfAbsent(graphic.material, materialIn -> graphic.texture.getScaledInstance(16, 16, Image.SCALE_SMOOTH));
+				Image tex = cache.computeIfAbsent(graphic.identifier, materialIn -> graphic.texture.getScaledInstance(16, 16, Image.SCALE_SMOOTH));
 				g2d.drawImage(tex, x * 16, y * 16, null);
 			}
 		}
@@ -45,7 +45,7 @@ public class BukkitImage extends GraphicImage<BukkitGraphic> {
 		
 		for(int x = 0; x < width; ++x) {
 			for(int y = 0; y < height; ++y) {
-				BukkitGraphic graphic = get(x, y);
+				MinecraftGraphic graphic = get(x, y);
 				if(graphic == null)
 					continue;
 				
@@ -62,7 +62,7 @@ public class BukkitImage extends GraphicImage<BukkitGraphic> {
 		double max = Double.MIN_VALUE;
 		for(int x = 0; x < width; ++x) {
 			for(int y = 0; y < height; ++y) {
-				BukkitGraphic graphic = get(x, y);
+				MinecraftGraphic graphic = get(x, y);
 				if(graphic == null)
 					continue;
 				
@@ -75,7 +75,7 @@ public class BukkitImage extends GraphicImage<BukkitGraphic> {
 		
 		for(int x = 0; x < width; ++x) {
 			for(int y = 0; y < height; ++y) {
-				BukkitGraphic graphic = get(x, y);
+				MinecraftGraphic graphic = get(x, y);
 				if(graphic == null)
 					continue;
 				
