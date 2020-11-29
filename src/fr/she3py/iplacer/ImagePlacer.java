@@ -11,9 +11,9 @@ import javax.imageio.ImageIO;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import fr.she3py.iplacer.bukkit.BukkitColorMap;
-import fr.she3py.iplacer.bukkit.BukkitGraphics;
-import fr.she3py.iplacer.bukkit.BukkitImage;
+import fr.she3py.iplacer.minecraft.bukkit.BukkitColorMap;
+import fr.she3py.iplacer.minecraft.bukkit.BukkitGraphics;
+import fr.she3py.iplacer.minecraft.bukkit.BukkitImage;
 import fr.she3py.iplacer.util.Arguments;
 
 public class ImagePlacer extends JavaPlugin {
