@@ -1,20 +1,20 @@
-package fr.she3py.iplacer.minecraft.bukkit;
+package fr.she3py.iplacer.minecraft;
 
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bukkit.NamespacedKey;
-
 import com.google.gson.JsonObject;
 
-public class BukkitConstructionCaches {
-	public final Map<NamespacedKey, JsonObject> blockModels;
-	public final Map<NamespacedKey, String> texturePaths;
+import fr.she3py.iplacer.util.GraphicIdentifier;
+
+public class MinecraftConstructionCaches {
+	public final Map<GraphicIdentifier, JsonObject> blockModels;
+	public final Map<GraphicIdentifier, String> texturePaths;
 	public final Map<String, BufferedImage> textures;
 	public final Map<String, JsonObject> textureMetas;
 	
-	public BukkitConstructionCaches(int initialCapacity) {
+	public MinecraftConstructionCaches(int initialCapacity) {
 		this.blockModels = new HashMap<>(initialCapacity);
 		this.texturePaths = new HashMap<>(initialCapacity);
 		this.textures = new HashMap<>(initialCapacity);

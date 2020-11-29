@@ -2,6 +2,6 @@ name: ImagePlacer
 version: 1.0.0
 author: ShE3py
 
-main: fr.she3py.iplacer.ImagePlacer
+main: fr.she3py.iplacer.minecraft.bukkit.BukkitImagePlacer
 prefix: "ImagePlacer"
 api-version: "1.16"
