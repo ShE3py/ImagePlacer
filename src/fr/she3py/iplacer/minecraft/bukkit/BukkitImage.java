@@ -1,4 +1,4 @@
-package fr.she3py.iplacer.bukkit;
+package fr.she3py.iplacer.minecraft.bukkit;
 
 import java.awt.Graphics2D;
 import java.awt.Image;
