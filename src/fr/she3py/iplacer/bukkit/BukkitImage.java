@@ -39,4 +39,57 @@ public class BukkitImage extends GraphicImage<BukkitGraphic> {
 		g2d.dispose();
 		return out;
 	}
+	
+	public BufferedImage toAverageImage() {
+		BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		
+		for(int x = 0; x < width; ++x) {
+			for(int y = 0; y < height; ++y) {
+				BukkitGraphic graphic = get(x, y);
+				if(graphic == null)
+					continue;
+				
+				out.setRGB(x, y, graphic.getAverageColor().toRGB() | (0xFF << 24));
+			}
+		}
+		
+		return out;
+	}
+	
+	public BufferedImage toDistanceImage(BufferedImage imageIn) {
+		BufferedImage out = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		
+		double max = Double.MIN_VALUE;
+		for(int x = 0; x < width; ++x) {
+			for(int y = 0; y < height; ++y) {
+				BukkitGraphic graphic = get(x, y);
+				if(graphic == null)
+					continue;
+				
+				double distance = graphic.getAverageColor().distanceTo(imageIn.getRGB(x, y));
+				if(distance > max)
+					max = distance;
+			}
+		}
+		
+		
+		for(int x = 0; x < width; ++x) {
+			for(int y = 0; y < height; ++y) {
+				BukkitGraphic graphic = get(x, y);
+				if(graphic == null)
+					continue;
+				
+				double distance = graphic.getAverageColor().distanceTo(imageIn.getRGB(x, y));
+				float factor = (float) (distance / max);
+				
+				int r = (int) Math.floor(factor * 255);
+				int g = (int) Math.floor(factor * 255);
+				int b = (int) Math.floor(factor * 255);
+				
+				out.setRGB(x, y, (r << 16) | (g << 8) | b);
+			}
+		}
+		
+		return out;
+	}
 }
