@@ -1,6 +1,7 @@
 package fr.she3py.iplacer.util;
 
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 public class Color3i {
 	public int r;
@@ -53,7 +54,7 @@ public class Color3i {
 			}
 		}
 		
-		long size = width * height;
+		long size = (long) width * height;
 		int rAvg = (int) (rSum / size);
 		int gAvg = (int) (gSum / size);
 		int bAvg = (int) (bSum / size);
@@ -99,6 +100,25 @@ public class Color3i {
 	
 	public int toRGB() {
 		return (r << 16) | (g << 8) | b;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(this == obj)
+			return true;
+		
+		if(obj == null || this.getClass() != obj.getClass())
+			return false;
+		
+		Color3i other = (Color3i) obj;
+		return r == other.r
+				   && g == other.g
+				   && b == other.b;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(r, g, b);
 	}
 	
 	@Override
