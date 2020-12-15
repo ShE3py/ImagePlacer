@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import fr.she3py.iplacer.GraphicImage;
-import fr.she3py.iplacer.minecraft.MinecraftGraphic;
 import fr.she3py.iplacer.util.GraphicIdentifier;
 
 public class MinecraftImage extends GraphicImage<MinecraftGraphic> {

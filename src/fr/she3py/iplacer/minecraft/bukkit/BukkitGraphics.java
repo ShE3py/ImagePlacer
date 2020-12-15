@@ -1,5 +1,7 @@
 package fr.she3py.iplacer.minecraft.bukkit;
 
+import static fr.she3py.iplacer.ImagePlacer.logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -21,16 +23,15 @@ import net.minecraft.server.v1_16_R2.VoxelShapes;
 
 import org.bukkit.Material;
 
-import fr.she3py.iplacer.ImagePlacer;
 import fr.she3py.iplacer.minecraft.MinecraftGraphics;
 import fr.she3py.iplacer.util.GraphicIdentifier;
 
 public class BukkitGraphics {
 	public static MinecraftGraphics createFrom(File rsc) throws IOException {
-		ImagePlacer.logger.info("Looking for compatible materials");
+		logger.info("Looking for compatible materials");
 		List<Material> materials = findMaterials().collect(Collectors.toList());
 		
-		ImagePlacer.logger.info("Found " + materials.size() + " materials");
+		logger.info("Found " + materials.size() + " materials");
 		return MinecraftGraphics.createFrom(
 			rsc,
 			materials.stream()
@@ -40,7 +41,7 @@ public class BukkitGraphics {
 	}
 	
 	public static MinecraftGraphics createFrom(String file) throws IOException {
-		return createFrom(new File(BukkitImagePlacer.plugin.getDataFolder(), file));
+		return createFrom(BukkitImagePlacer.getFile(file));
 	}
 	
 	private static Stream<Material> findMaterials() {

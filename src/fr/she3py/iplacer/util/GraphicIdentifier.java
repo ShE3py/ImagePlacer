@@ -1,8 +1,13 @@
 package fr.she3py.iplacer.util;
 
+import java.io.IOException;
 import java.util.Objects;
 
-public class GraphicIdentifier {
+import fr.she3py.iplacer.storage.base.IBinaryReader;
+import fr.she3py.iplacer.storage.base.IBinarySerializable;
+import fr.she3py.iplacer.storage.base.IBinaryWriter;
+
+public class GraphicIdentifier implements IBinarySerializable {
 	private final String namespace;
 	private final String key;
 	
@@ -14,12 +19,22 @@ public class GraphicIdentifier {
 		this.key = key;
 	}
 	
+	public GraphicIdentifier(IBinaryReader reader) throws IOException {
+		this(reader.readStringASCII(), reader.readStringASCII());
+	}
+	
 	public String getNamespace() {
 		return namespace;
 	}
 	
 	public String getKey() {
 		return key;
+	}
+	
+	@Override
+	public void serialize(IBinaryWriter writer) throws IOException {
+		writer.writeStringASCII(namespace);
+		writer.writeStringASCII(key);
 	}
 	
 	@Override

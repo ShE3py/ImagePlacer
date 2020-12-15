@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -20,15 +21,24 @@ import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import fr.she3py.iplacer.storage.BinaryFileReader;
+import fr.she3py.iplacer.storage.BinaryFileWriter;
+import fr.she3py.iplacer.storage.base.IBinaryReader;
+import fr.she3py.iplacer.storage.base.IBinarySerializable;
+import fr.she3py.iplacer.storage.base.IBinarySerializable.SerializeWithChecksum;
+import fr.she3py.iplacer.storage.base.IBinaryWriter;
 import fr.she3py.iplacer.util.Arguments;
 import fr.she3py.iplacer.util.GraphicIdentifier;
 
-public class MinecraftGraphics {
+@SerializeWithChecksum
+public class MinecraftGraphics implements IBinarySerializable {
 	private final List<MinecraftGraphic> graphics;
+	private final List<GraphicIdentifier> failed;
 	private final MinecraftConstructionCaches constructionCaches;
 	
 	private MinecraftGraphics(int initialCapacity) {
 		this.graphics = new ArrayList<>(initialCapacity);
+		this.failed = new ArrayList<>();
 		this.constructionCaches = new MinecraftConstructionCaches(initialCapacity);
 	}
 	
@@ -46,6 +56,7 @@ public class MinecraftGraphics {
 			}
 			catch(Exception e) {
 				logger.log(Level.SEVERE, "Generation failed for: " + identifier.getKey() + ", skipping", e);
+				graphics.failed.add(identifier);
 			}
 		}
 		
@@ -54,6 +65,20 @@ public class MinecraftGraphics {
 		
 		logger.info("Generation complete - " + graphics.size() + " of " + identifiers.size() + " blocks mapped");
 		return graphics;
+	}
+	
+	public static MinecraftGraphics createFrom(File rsc, File manifest) throws IOException {
+		List<GraphicIdentifier> identifiers;
+		
+		try(BinaryFileReader reader = BinaryFileReader.safeWriteReader(manifest)) {
+			identifiers = reader.readCollection(ArrayList::new, IBinaryReader.objectReader(GraphicIdentifier.class));
+			List<GraphicIdentifier> failed = reader.readCollection(ArrayList::new, IBinaryReader.objectReader(GraphicIdentifier.class));
+			
+			Arguments.requireEqual("checksum", Objects.hash(identifiers, failed), reader.readInteger());
+			identifiers.addAll(failed);
+		}
+		
+		return createFrom(rsc, identifiers);
 	}
 	
 	private MinecraftGraphic createGraphicFor(GraphicIdentifier identifier, ZipFile zipFile) throws IOException {
@@ -182,8 +207,38 @@ public class MinecraftGraphics {
 		return result;
 	}
 	
+	@Override
+	public void serialize(IBinaryWriter writer) throws IOException {
+		writer.writeCollection(graphics, IBinaryWriter::writeObject);
+		writer.writeCollection(failed, IBinaryWriter::writeObject);
+	}
+	
+	public void saveManifest(File manifest) throws IOException {
+		try(BinaryFileWriter.Safe writer = BinaryFileWriter.safeWriter(manifest)) {
+			writer.writeObject(this);
+			writer.terminate();
+		}
+	}
+	
 	public MinecraftColorMap makeColorMap() {
 		return new MinecraftColorMap(graphics);
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(this == obj)
+			return true;
+		
+		if(obj == null || this.getClass() != obj.getClass())
+			return false;
+		
+		MinecraftGraphics other = (MinecraftGraphics) obj;
+		return graphics.equals(other.graphics);
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(graphics, failed);
 	}
 	
 	public boolean isEmpty() {
